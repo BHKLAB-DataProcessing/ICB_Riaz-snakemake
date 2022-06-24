@@ -48,7 +48,7 @@ rule format_snv:
         S3.remote(prefix + "download/SNV.txt.gz"),
         S3.remote(prefix + "processed/cased_sequenced.csv")
     resources:
-        mem_mb=1000
+        mem_mb=3000
     shell:
         """
         Rscript scripts/Format_SNV.R \
@@ -63,7 +63,7 @@ rule format_expr:
         S3.remote(prefix + "download/EXPR_count.txt.gz"),
         S3.remote(prefix + "processed/cased_sequenced.csv")
     resources:
-        mem_mb=1000
+        mem_mb=3000
     shell:
         """
         Rscript scripts/Format_EXPR.R \
