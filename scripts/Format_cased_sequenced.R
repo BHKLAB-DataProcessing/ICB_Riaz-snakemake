@@ -5,7 +5,8 @@ input_dir <- args[1]
 output_dir <- args[2]
 
 rna = as.matrix( fread( file.path(input_dir, "EXPR_count.txt.gz") , stringsAsFactors=FALSE  , sep="\t" ) )
-rna = rna[ , grep( "_Pre" , colnames(rna) ) & !colnames(rna) %in% c("Pt37_Pre","Pt3_Pre","Pt5_Pre","Pt78_Pre","Pt92_Pre") ]
+rna = rna[ , grep( "_Pre" , colnames(rna) ) ]
+rna = rna[ , !colnames(rna) %in% c("Pt37_Pre","Pt3_Pre","Pt5_Pre","Pt78_Pre","Pt92_Pre") ]
 rna = sort( unique( sapply( colnames(rna) , function(x){ unlist( strsplit( x , "_" , fixed=TRUE ) )[1] } ) ) )[-1]
 
 clin = read.csv( file.path(input_dir, "CLIN.txt"), stringsAsFactors=FALSE , sep="\t" )
