@@ -7,17 +7,19 @@ S3 = S3RemoteProvider(
 )
 prefix = config["prefix"]
 filename = config["filename"]
-data_source  = "https://raw.githubusercontent.com/BHKLAB-Pachyderm/ICB_Riaz-data/main/"
 
 rule get_MultiAssayExp:
-    output:
-        S3.remote(prefix + filename)
     input:
         S3.remote(prefix + "processed/CLIN.csv"),
-        S3.remote(prefix + "processed/EXPR.csv"),
+        S3.remote(prefix + "processed/EXPR_gene_tpm.csv"),
+        S3.remote(prefix + "processed/EXPR_gene_counts.csv"),
+        S3.remote(prefix + "processed/EXPR_isoform_tpm.csv"),
+        S3.remote(prefix + "processed/EXPR_isoform_counts.csv"),
         S3.remote(prefix + "processed/SNV.csv"),
         S3.remote(prefix + "processed/cased_sequenced.csv"),
         S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
+    output:
+        S3.remote(prefix + filename)
     resources:
         mem_mb=3000
     shell:
@@ -27,26 +29,18 @@ rule get_MultiAssayExp:
         load(paste0("{prefix}", "annotation/Gencode.v40.annotation.RData"))
         source("https://raw.githubusercontent.com/BHKLAB-Pachyderm/ICB_Common/main/code/get_MultiAssayExp.R");
         saveRDS(
-            get_MultiAssayExp(study = "Riaz", input_dir = paste0("{prefix}", "processed")), 
+            get_MultiAssayExp(study = "Riaz", input_dir = paste0("{prefix}", "processed"), expr_with_counts_isoforms=TRUE), 
             "{prefix}{filename}"
         );
         '
         """
 
-rule download_annotation:
-    output:
-        S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
-    shell:
-        """
-        wget https://github.com/BHKLAB-Pachyderm/Annotations/blob/master/Gencode.v40.annotation.RData?raw=true -O {prefix}annotation/Gencode.v40.annotation.RData 
-        """
-
 rule format_snv:
-    output:
-        S3.remote(prefix + "processed/SNV.csv")
     input:
         S3.remote(prefix + "download/SNV.txt.gz"),
         S3.remote(prefix + "processed/cased_sequenced.csv")
+    output:
+        S3.remote(prefix + "processed/SNV.csv")
     resources:
         mem_mb=3000
     shell:
@@ -57,11 +51,13 @@ rule format_snv:
         """
 
 rule format_expr:
-    output:
-        S3.remote(prefix + "processed/EXPR.csv")
     input:
-        S3.remote(prefix + "download/EXPR_count.txt.gz"),
-        S3.remote(prefix + "processed/cased_sequenced.csv")
+        S3.remote(prefix + "download/expr_list.rds")
+    output:
+        S3.remote(prefix + "processed/EXPR_gene_tpm.csv"),
+        S3.remote(prefix + "processed/EXPR_gene_counts.csv"),
+        S3.remote(prefix + "processed/EXPR_isoform_tpm.csv"),
+        S3.remote(prefix + "processed/EXPR_isoform_counts.csv")
     resources:
         mem_mb=3000
     shell:
@@ -72,11 +68,11 @@ rule format_expr:
         """
 
 rule format_clin:
-    output:
-        S3.remote(prefix + "processed/CLIN.csv")
     input:
         S3.remote(prefix + "processed/cased_sequenced.csv"),
         S3.remote(prefix + "download/CLIN.txt")
+    output:
+        S3.remote(prefix + "processed/CLIN.csv")
     resources:
         mem_mb=1000
     shell:
@@ -87,30 +83,58 @@ rule format_clin:
         """
 
 rule format_cased_sequenced:
-    output:
-        S3.remote(prefix + "processed/cased_sequenced.csv")
     input:
         S3.remote(prefix + "download/CLIN.txt"),
-        S3.remote(prefix + "download/EXPR_count.txt.gz")
+        S3.remote(prefix + "download/expr_list.rds")
+    output:
+        S3.remote(prefix + "processed/cased_sequenced.csv")
     resources:
         mem_mb=1000
     shell:
         """
         Rscript scripts/Format_cased_sequenced.R \
         {prefix}download \
-        {prefix}processed \
+        {prefix}processed
+        """
+
+rule format_downloaded_data:
+    input:
+        S3.remote(prefix + "download/1-s2.0-S0092867417311224-mmc2.xlsx"),
+        S3.remote(prefix + "download/1-s2.0-S0092867417311224-mmc3.xlsx"),
+        S3.remote(prefix + "download/rnaseq_samples.tsv"),
+        S3.remote(prefix + "download/Riaz_kallisto.zip"),
+        S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
+    output:
+        S3.remote(prefix + "download/CLIN.txt"),
+        S3.remote(prefix + "download/expr_list.rds"),
+        S3.remote(prefix + "download/SNV.txt.gz")
+    shell:
+        """
+        Rscript scripts/format_downloaded_data.R \
+        {prefix}download \
+        {prefix}annotation     
+        """
+
+rule download_annotation:
+    output:
+        S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
+    shell:
+        """
+        wget -O {prefix}annotation/Gencode.v40.annotation.RData https://github.com/BHKLAB-Pachyderm/Annotations/blob/master/Gencode.v40.annotation.RData?raw=true 
         """
 
 rule download_data:
     output:
-        S3.remote(prefix + "download/CLIN.txt"),
-        S3.remote(prefix + "download/EXPR_count.txt.gz"),
-        S3.remote(prefix + "download/SNV.txt.gz")
+        S3.remote(prefix + "download/1-s2.0-S0092867417311224-mmc2.xlsx"),
+        S3.remote(prefix + "download/1-s2.0-S0092867417311224-mmc3.xlsx"),
+        S3.remote(prefix + "download/rnaseq_samples.tsv"),
+        S3.remote(prefix + "download/Riaz_kallisto.zip")
     resources:
         mem_mb=1000
     shell:
         """
-        wget {data_source}CLIN.txt -O {prefix}download/CLIN.txt
-        wget {data_source}EXPR_count.txt.gz -O {prefix}download/EXPR_count.txt.gz
-        wget {data_source}SNV.txt.gz -O {prefix}download/SNV.txt.gz
+        wget -O {prefix}download/Riaz_kallisto.zip https://github.com/BHKLAB-Pachyderm/ICB_Riaz-data/raw/main/Riaz_kallisto.zip
+        wget -O {prefix}download/1-s2.0-S0092867417311224-mmc2.xlsx https://ars.els-cdn.com/content/image/1-s2.0-S0092867417311224-mmc2.xlsx
+        wget -O {prefix}download/1-s2.0-S0092867417311224-mmc3.xlsx https://ars.els-cdn.com/content/image/1-s2.0-S0092867417311224-mmc3.xlsx
+        wget -O {prefix}download/rnaseq_samples.tsv "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=PRJNA356761&result=read_run&fields=run_accession,sample_title&format=tsv&download=true&limit=0"
         """ 

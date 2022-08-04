@@ -4,7 +4,7 @@ args <- commandArgs(trailingOnly = TRUE)
 input_dir <- args[1]
 output_dir <- args[2]
 
-snv = as.data.frame( fread( file.path(input_dir, "SNV.txt.gz") , stringsAsFactors=FALSE , sep="\t" ))
+snv = as.data.frame( fread( file.path(input_dir, "SNV.txt.gz") , stringsAsFactors=FALSE , sep=";" ))
 
 data = cbind( snv[ , c("Start" , "Patient" , "Hugo Symbol", "Variant Classification"  ) ] ,
 				sapply( snv[ , "Chromosome" ] , function(x){ paste( "chr" , x , sep="" ) } ) ,
