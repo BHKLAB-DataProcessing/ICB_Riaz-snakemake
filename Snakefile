@@ -102,7 +102,9 @@ rule format_downloaded_data:
         S3.remote(prefix + "download/1-s2.0-S0092867417311224-mmc2.xlsx"),
         S3.remote(prefix + "download/1-s2.0-S0092867417311224-mmc3.xlsx"),
         S3.remote(prefix + "download/rnaseq_samples.tsv"),
-        S3.remote(prefix + "download/Riaz_kallisto.zip"),
+        S3.remote(prefix + "download/Riaz_kallisto1.zip"),
+        S3.remote(prefix + "download/Riaz_kallisto2.zip"),
+        S3.remote(prefix + "download/Riaz_kallisto3.zip"),
         S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
     output:
         S3.remote(prefix + "download/CLIN.txt"),
@@ -128,12 +130,16 @@ rule download_data:
         S3.remote(prefix + "download/1-s2.0-S0092867417311224-mmc2.xlsx"),
         S3.remote(prefix + "download/1-s2.0-S0092867417311224-mmc3.xlsx"),
         S3.remote(prefix + "download/rnaseq_samples.tsv"),
-        S3.remote(prefix + "download/Riaz_kallisto.zip")
+        S3.remote(prefix + "download/Riaz_kallisto1.zip"),
+        S3.remote(prefix + "download/Riaz_kallisto2.zip"),
+        S3.remote(prefix + "download/Riaz_kallisto3.zip")
     resources:
         mem_mb=1000
     shell:
         """
-        wget -O {prefix}download/Riaz_kallisto.zip https://github.com/BHKLAB-Pachyderm/ICB_Riaz-data/raw/main/Riaz_kallisto.zip
+        wget -O {prefix}download/Riaz_kallisto1.zip https://zenodo.org/record/6968453/files/Riaz_kallisto1.zip?download=1
+        wget -O {prefix}download/Riaz_kallisto2.zip https://zenodo.org/record/6968453/files/Riaz_kallisto2.zip?download=1
+        wget -O {prefix}download/Riaz_kallisto3.zip https://zenodo.org/record/6968453/files/Riaz_kallisto3.zip?download=1
         wget -O {prefix}download/1-s2.0-S0092867417311224-mmc2.xlsx https://ars.els-cdn.com/content/image/1-s2.0-S0092867417311224-mmc2.xlsx
         wget -O {prefix}download/1-s2.0-S0092867417311224-mmc3.xlsx https://ars.els-cdn.com/content/image/1-s2.0-S0092867417311224-mmc3.xlsx
         wget -O {prefix}download/rnaseq_samples.tsv "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=PRJNA356761&result=read_run&fields=run_accession,sample_title&format=tsv&download=true&limit=0"

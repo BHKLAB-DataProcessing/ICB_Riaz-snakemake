@@ -1,10 +1,7 @@
-# wget -O ~/Documents/ICBCuration/data_source/Riaz/1-s2.0-S0092867417311224-mmc2.xlsx https://ars.els-cdn.com/content/image/1-s2.0-S0092867417311224-mmc2.xlsx
-# wget -O ~/Documents/ICBCuration/data_source/Riaz/1-s2.0-S0092867417311224-mmc3.xlsx https://ars.els-cdn.com/content/image/1-s2.0-S0092867417311224-mmc3.xlsx
-# wget -O ~/Documents/ICBCuration/data_source/Riaz/rnaseq_samples.tsv "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=PRJNA356761&result=read_run&fields=run_accession,sample_title&format=tsv&download=true&limit=0"
-
 library(data.table)
 library(readxl) 
 library(stringr)
+library(tximport)
 
 args <- commandArgs(trailingOnly = TRUE)
 work_dir <- args[1]
@@ -23,7 +20,15 @@ write.table(clin, file.path(work_dir, 'CLIN.txt'), col.names=TRUE, sep='\t')
 # expr_list.rds
 source('https://raw.githubusercontent.com/BHKLAB-Pachyderm/ICB_Common/main/code/process_kallisto_output.R')
 load(file.path(annot_dir, "Gencode.v40.annotation.RData"))
-process_kallisto_output(work_dir, 'Riaz_kallisto.zip', tx2gene)
+
+dir.create(file.path(work_dir, 'rnaseq'))
+zipfiles <- c('Riaz_kallisto1.zip', 'Riaz_kallisto2.zip', 'Riaz_kallisto3.zip')
+for(zipfile in zipfiles){
+  unzip(file.path(work_dir, zipfile), exdir=file.path(work_dir, 'rnaseq'))
+}
+unlink(file.path(work_dir, 'rnaseq', '__MACOSX'), recursive = TRUE)
+
+process_kallisto_output(work_dir, tx2gene)
 
 rnaseq_samples <- read.table(file.path(work_dir, 'rnaseq_samples.tsv'), header=TRUE, sep='\t')
 rnaseq_samples <- rnaseq_samples[str_detect(rnaseq_samples$sample_title, 'Pre_'), ]
