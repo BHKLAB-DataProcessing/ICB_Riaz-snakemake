@@ -70,7 +70,9 @@ rule format_expr:
 rule format_clin:
     input:
         S3.remote(prefix + "processed/cased_sequenced.csv"),
-        S3.remote(prefix + "download/CLIN.txt")
+        S3.remote(prefix + "download/CLIN.txt"),
+        S3.remote(prefix + "annotation/curation_drug.csv"),
+        S3.remote(prefix + "annotation/curation_tissue.csv")
     output:
         S3.remote(prefix + "processed/CLIN.csv")
     resources:
@@ -80,6 +82,7 @@ rule format_clin:
         Rscript scripts/Format_CLIN.R \
         {prefix}download \
         {prefix}processed \
+        {prefix}annotation
         """
 
 rule format_cased_sequenced:
@@ -119,10 +122,14 @@ rule format_downloaded_data:
 
 rule download_annotation:
     output:
-        S3.remote(prefix + "annotation/Gencode.v40.annotation.RData")
+        S3.remote(prefix + "annotation/Gencode.v40.annotation.RData"),
+        S3.remote(prefix + "annotation/curation_drug.csv"),
+        S3.remote(prefix + "annotation/curation_tissue.csv")
     shell:
         """
-        wget -O {prefix}annotation/Gencode.v40.annotation.RData https://github.com/BHKLAB-Pachyderm/Annotations/blob/master/Gencode.v40.annotation.RData?raw=true 
+        wget -O {prefix}annotation/Gencode.v40.annotation.RData https://github.com/BHKLAB-Pachyderm/Annotations/blob/master/Gencode.v40.annotation.RData?raw=true
+        wget https://github.com/BHKLAB-Pachyderm/ICB_Common/raw/main/data/curation_drug.csv -O {prefix}annotation/curation_drug.csv
+        wget https://github.com/BHKLAB-Pachyderm/ICB_Common/raw/main/data/curation_tissue.csv -O {prefix}annotation/curation_tissue.csv 
         """
 
 rule download_data:
